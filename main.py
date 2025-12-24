@@ -30,7 +30,6 @@ def save_config(data):
         json.dump(data, f, indent=4)
 
 def replace_placeholders(obj, member):
-    """Recursively replace placeholders in strings within dictionaries and lists."""
     if isinstance(obj, str):
         return obj.replace("{user}", member.mention).replace("{username}", member.name)
     elif isinstance(obj, list):
@@ -55,22 +54,13 @@ async def on_ready():
         if guild_id in config and config[guild_id].get('role_id'):
             role_id = config[guild_id]['role_id']
             role = guild.get_role(role_id)
-            
             if role:
-                logging.info(f"Checking roles for {guild.name}...")
-                count = 0
                 for member in guild.members:
                     if not member.bot and role not in member.roles:
                         try:
                             await member.add_roles(role)
-                            count += 1
-                        except discord.Forbidden:
-                            logging.error(f"Missing permissions to assign role in {guild.name}")
-                            break
-                        except Exception as e:
-                            logging.error(f"Failed to assign role to {member}: {e}")
-                if count > 0:
-                    logging.info(f"Backfilled role to {count} members in {guild.name}")
+                        except:
+                            continue
 
 @bot.event
 async def on_member_join(member):
@@ -124,7 +114,10 @@ async def embed_command(interaction: discord.Interaction, embed_json: str):
             await interaction.response.send_message("JSON must contain 'content' or 'embeds'.", ephemeral=True)
             return
 
-        await interaction.response.send_message(content=content, embeds=embeds[:10])
+        await interaction.response.send_message("Embed posted successfully.", ephemeral=True)
+        
+        await interaction.channel.send(content=content, embeds=embeds[:10])
+        
     except json.JSONDecodeError:
         await interaction.response.send_message("Error: Invalid JSON format.", ephemeral=True)
     except Exception as e:
