@@ -204,7 +204,7 @@ class TicketView(ui.View):
 class MyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.invite_cache = {} # {guild_id: {code: uses}}
+        self.invite_cache = {}
 
     async def setup_hook(self):
         self.tree.on_error = self.on_tree_error
@@ -327,7 +327,7 @@ async def on_member_join(member):
                 
                 now = datetime.datetime.now(datetime.timezone.utc)
                 account_age = now - member.created_at
-                is_fake = account_age.total_seconds() < 86400 # 24 hours
+                is_fake = account_age.total_seconds() < 86400
                 
                 if guild_id not in invites_data:
                     invites_data[guild_id] = {}
@@ -777,6 +777,50 @@ async def trackinvites_command(interaction: discord.Interaction, channel: discor
     save_json(CONFIG_FILE, config)
     
     await interaction.response.send_message(f"Invite tracking logs will be posted in {channel.mention}.")
+
+@bot.tree.command(name="invites", description="Check invite statistics")
+@app_commands.describe(user="The user to check (defaults to yourself)")
+async def invites_command(interaction: discord.Interaction, user: discord.Member = None):
+    if user is None:
+        user = interaction.user
+        
+    invites_data = load_json(INVITES_FILE)
+    guild_id = str(interaction.guild_id)
+    
+    real_count = 0
+    fake_count = 0
+    left_count = 0
+    
+    if guild_id in invites_data:
+        inviter_records = [
+            (uid, data) for uid, data in invites_data[guild_id].items()
+            if data.get('inviter_id') == user.id
+        ]
+        
+        for uid_str, data in inviter_records:
+            if data.get('is_fake'):
+                fake_count += 1
+                continue
+                
+            mem = interaction.guild.get_member(int(uid_str))
+            if mem:
+                real_count += 1
+            else:
+                left_count += 1
+
+    embed_data = {
+        "title": f"{user.name}'s Invites",
+        "thumbnail": {"url": user.avatar.url if user.avatar else user.default_avatar.url},
+        "fields": [
+            {"name": "Real", "value": str(real_count), "inline": True},
+            {"name": "Fake", "value": str(fake_count), "inline": True},
+            {"name": "Left", "value": str(left_count), "inline": True}
+        ],
+        "footer": {"text": f"Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}"}
+    }
+    
+    embed_data = apply_theme(embed_data, guild_id)
+    await interaction.response.send_message(embed=discord.Embed.from_dict(embed_data))
 
 if __name__ == '__main__':
     if not TOKEN:
