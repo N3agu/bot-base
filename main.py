@@ -263,6 +263,42 @@ async def poll_command(interaction: discord.Interaction, question: str, options:
     for i in range(len(option_list)):
         await message.add_reaction(emojis[i])
 
+@bot.tree.command(name="imagepoll", description="Create an image-based poll (images separated by |)")
+@app_commands.describe(question="The poll question", urls="Image URLs separated by |", use_numbers="Use numbers 1-10 instead of letters")
+async def imagepoll_command(interaction: discord.Interaction, question: str, urls: str, use_numbers: bool = False):
+    url_list = [u.strip() for u in urls.split('|') if u.strip()]
+    
+    if len(url_list) < 2:
+        await interaction.response.send_message("You need at least 2 image URLs for a poll.", ephemeral=True)
+        return
+        
+    max_options = 10 if use_numbers else 20
+    if len(url_list) > max_options:
+        await interaction.response.send_message(f"Maximum options supported: {max_options}", ephemeral=True)
+        return
+
+    emojis = []
+    if use_numbers:
+        emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+    else:
+        emojis = [chr(0x1f1e6 + i) for i in range(20)]
+
+    await interaction.response.send_message("Creating image poll...", ephemeral=True)
+
+    question_data = {"title": question}
+    question_data = apply_theme(question_data, str(interaction.guild_id))
+    await interaction.channel.send(embed=discord.Embed.from_dict(question_data))
+
+    for i, url in enumerate(url_list):
+        embed_data = {
+            "description": f"Option {emojis[i]}",
+            "image": {"url": url}
+        }
+        embed_data = apply_theme(embed_data, str(interaction.guild_id))
+        
+        msg = await interaction.channel.send(embed=discord.Embed.from_dict(embed_data))
+        await msg.add_reaction(emojis[i])
+
 @bot.tree.command(name="status", description="Set the bot's activity status")
 @app_commands.describe(activity="Type of activity", text="Status text")
 @app_commands.choices(activity=[
