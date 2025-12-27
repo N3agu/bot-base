@@ -478,9 +478,15 @@ async def status_command(interaction: discord.Interaction, activity: app_command
         await interaction.response.send_message("Failed to update status.", ephemeral=True)
 
 @bot.tree.command(name="ticketpanel", description="Create a ticket panel in a specific channel")
-@app_commands.describe(channel="Channel to post the panel", category_id="ID of the category for new tickets", embed_json="JSON for the panel embed")
+@app_commands.describe(channel="Channel to post the panel", category_id="ID of the category for new tickets", embed_json="JSON for the panel embed", button_color="Color of the Open Ticket button")
+@app_commands.choices(button_color=[
+    app_commands.Choice(name="Gray (Default)", value="gray"),
+    app_commands.Choice(name="Blue", value="blue"),
+    app_commands.Choice(name="Green", value="green"),
+    app_commands.Choice(name="Red", value="red")
+])
 @app_commands.checks.has_permissions(administrator=True)
-async def ticketpanel_command(interaction: discord.Interaction, channel: discord.TextChannel, category_id: str, embed_json: str):
+async def ticketpanel_command(interaction: discord.Interaction, channel: discord.TextChannel, category_id: str, embed_json: str, button_color: app_commands.Choice[str] = None):
     try:
         try:
             cat_id_int = int(category_id)
@@ -507,7 +513,22 @@ async def ticketpanel_command(interaction: discord.Interaction, channel: discord
             await interaction.response.send_message("JSON must contain 'content' or 'embeds'.", ephemeral=True)
             return
 
-        message = await channel.send(content=content, embeds=embeds[:10], view=TicketView())
+        view = TicketView()
+        
+        color_map = {
+            "gray": discord.ButtonStyle.secondary,
+            "blue": discord.ButtonStyle.primary,
+            "green": discord.ButtonStyle.success,
+            "red": discord.ButtonStyle.danger
+        }
+        
+        target_style = discord.ButtonStyle.secondary
+        if button_color:
+            target_style = color_map.get(button_color.value, discord.ButtonStyle.secondary)
+            
+        view.children[0].style = target_style
+
+        message = await channel.send(content=content, embeds=embeds[:10], view=view)
         
         config = load_config()
         if 'tickets' not in config:
