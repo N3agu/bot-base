@@ -1,10 +1,9 @@
-<div align=center>
+<div align="center">
   <h1>Bot Base</h1>
-<img src="https://raw.githubusercontent.com/N3agu/Bot-Base/refs/heads/main/Images/logo.png" width="220">
+  <img src="https://raw.githubusercontent.com/N3agu/bot-base/refs/heads/main/Images/logo.png" width="220">
+  
+  <p><b>A robust, feature-rich Discord bot base built with `discord.py`. This includes advanced systems for ticketing, invite tracking, polling, reaction roles, and server management, all configurable via Slash Commands.</b></p>
 </div>
-
-## Summary
-A robust, feature-rich Discord bot base built with `discord.py`. This includes advanced systems for ticketing, invite tracking, polling, reaction roles, and server management, all configurable via Slash Commands.
 
 ## Features
 
